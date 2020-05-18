@@ -1,10 +1,11 @@
 import redis
 import logging
 
+
 class Config(object):
     DEBUG = True
     SECRET_KEY = "EjpNVSNQTyGi1VvWECj9TvC/+kq3oujee2kTfQUs8yCM6xX9Yjq52v54g+HVoknA"
-    SQLALCHEMY_DATABASE_URI = "mysql://root:mysql@47.102.102.179:3306/information"
+    SQLALCHEMY_DATABASE_URI = "mysql://root:Python123.@47.102.102.179:3306/information"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     REDIS_HOST = "47.102.102.179"
     REDIS_PORT = 6379
@@ -26,6 +27,7 @@ class DevelopementConfig(Config):
 class ProductionConfig(Config):
     """生产模式下的配置"""
     pass
+
 
 # 定义配置字典
 config = {
