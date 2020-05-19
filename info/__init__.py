@@ -34,7 +34,10 @@ def create_app(config_name):
     # 注册蓝图
     from info.modules.index import index_blu
     app.register_blueprint(index_blu)
-
+    # 验证码
+    from info.modules.passport import passport_blu
+    app.register_blueprint(passport_blu)
+    
     return app
 
 
