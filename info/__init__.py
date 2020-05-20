@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import redis
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_session import Session
 import logging
 from logging.handlers import RotatingFileHandler
@@ -28,7 +28,15 @@ def create_app(config_name):
     redis_store = redis.StrictRedis(host=config[config_name].REDIS_HOST, port=config[config_name].REDIS_PORT,
                                     decode_responses=True)
     # 开启csrf保护
-    # CSRFProtect(app)
+    CSRFProtect(app)
+
+    @app.after_request
+    def set_csrf_token(response):
+        csrf_token = generate_csrf()
+        # 2.获取响应对象，统一设置csrf_token值到cookie中
+        response.set_cookie("csrf_token", csrf_token)
+        return response
+
     # 设置session保存位置
     Session(app)
 

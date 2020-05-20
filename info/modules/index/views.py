@@ -1,11 +1,21 @@
 from . import index_blu
-from flask import render_template, current_app
+from flask import render_template, current_app, session
 from info.models import User, News, Category
 from info import constants
 
 
 @index_blu.route('/')
 def index():
+    # 获取到当前登录用户的id
+    user_id = session.get("user_id")
+    # 通过id获取用户信息
+    user = None
+    if user_id:
+        try:
+            user = User.query.get(user_id)
+        except Exception as e:
+            current_app.logger.error(e)
+
     # 获取点击排行数据
     news_list = None
     try:
@@ -18,7 +28,7 @@ def index():
         click_news_list.append(news.to_basic_dict())
 
     data = {
-        # "user_info": user.to_dict() if user else None,
+        "user_info": user.to_dict() if user else None,
         "click_news_list": click_news_list,
     }
     return render_template('news/index.html', data=data)
