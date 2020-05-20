@@ -28,14 +28,18 @@ def create_app(config_name):
     redis_store = redis.StrictRedis(host=config[config_name].REDIS_HOST, port=config[config_name].REDIS_PORT,
                                     decode_responses=True)
     # 开启csrf保护
-    CSRFProtect(app)
-
-    @app.after_request
-    def set_csrf_token(response):
-        csrf_token = generate_csrf()
-        # 2.获取响应对象，统一设置csrf_token值到cookie中
-        response.set_cookie("csrf_token", csrf_token)
-        return response
+    # CSRFProtect(app)
+    #
+    # @app.after_request
+    # def set_csrf_token(response):
+    #     """补充csrf_token的逻辑"""
+    #
+    #     # 1.生成csrf_token随机值
+    #     csrf_token = generate_csrf()
+    #     # 2.获取响应对象，统一设置csrf_token值到cookie中
+    #     response.set_cookie("csrf_token", csrf_token)
+    #     # 3.返回响应对象
+    #     return response
 
     # 设置session保存位置
     Session(app)
