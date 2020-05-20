@@ -25,7 +25,8 @@ def create_app(config_name):
     db.init_app(app)
     # 配置redis
     global redis_store
-    redis_store = redis.StrictRedis(host=config[config_name].REDIS_HOST, port=config[config_name].REDIS_PORT)
+    redis_store = redis.StrictRedis(host=config[config_name].REDIS_HOST, port=config[config_name].REDIS_PORT,
+                                    decode_responses=True)
     # 开启csrf保护
     # CSRFProtect(app)
     # 设置session保存位置
@@ -37,7 +38,7 @@ def create_app(config_name):
     # 验证码
     from info.modules.passport import passport_blu
     app.register_blueprint(passport_blu)
-    
+
     return app
 
 

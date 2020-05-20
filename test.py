@@ -12,6 +12,12 @@ import random
 # redis_store.setex('ImageCode_' + code_id, 300, text)
 #
 # print(name, text, image)
-result = random.randint(0, 999999)
-sms_code = '%06d' % result
-print(sms_code)
+# result = random.randint(0, 999999)
+# sms_code = '%06d' % result
+# print(sms_code)
+sms_code = '929750'
+sms = b'929750'
+if sms_code.lower() == sms.lower():
+    print('..')
+else:
+    print(".")

@@ -3,6 +3,7 @@ from flask import make_response
 from flask import request, session
 import re
 import random
+from datetime import datetime
 
 from . import passport_blu
 from info import constants, redis_store, db
@@ -30,16 +31,6 @@ def get_image_code():
 
 @passport_blu.route('/sms_code', methods=["post"])
 def send_sms():
-    """
-       1. 接收参数并判断是否有值
-       2. 校验手机号是正确
-       3. 通过传入的图片编码去redis中查询真实的图片验证码内容
-       4. 进行验证码内容的比对
-       5. 生成发送短信的内容并发送短信
-       6. redis中保存短信验证码内容
-       7. 返回发送成功的响应
-       :return:
-    """
     param_dict = request.json
     mobile = param_dict.get('mobile')
     image_code = param_dict.get('image_code')
@@ -52,7 +43,7 @@ def send_sms():
     try:
         real_image_code = redis_store.get('ImageCode_' + image_code_id)
         if real_image_code:
-            real_image_code = real_image_code.decode()
+            real_image_code = real_image_code
             redis_store.delete('ImageCode_' + image_code_id)
     except Exception as e:
         current_app.logger.error(e)
@@ -64,7 +55,7 @@ def send_sms():
     # print('验证码正确')
     try:
         user = User.query.filter(User.mobile == mobile).first()
-        print('user:{}'.format(user))
+        # print('user:{}'.format(user))
     except Exception as e:
         # print(e)
         current_app.logger.error(e)
@@ -87,15 +78,6 @@ def send_sms():
 
 @passport_blu.route('/register', methods=['POST'])
 def register():
-    """
-        1. 获取参数和判断是否有值
-        2. 从redis中获取指定手机号对应的短信验证码的
-        3. 校验验证码
-        4. 初始化 user 模型，并设置数据并添加到数据库
-        5. 保存当前用户的状态
-        6. 返回注册的结果
-        :return:
-    """
     json_data = request.json
     mobile = json_data.get('mobile')
     sms_code = json_data.get('sms_code')
@@ -110,7 +92,8 @@ def register():
         return jsonify(errno=RET.DBERR, errmsg="获取本地验证码失败")
     if not real_sms_code:
         return jsonify(errno=RET.NODATA, errmsg='短信验证码过期')
-    if sms_code != real_sms_code:
+    if sms_code.lower() != real_sms_code.lower():
+        # if sms_code != real_sms_code:
         return jsonify(errno=RET.DATAERR, errmsg='验证码错误')
     try:
         redis_store.delete("SMS_" + mobile)
@@ -120,6 +103,7 @@ def register():
     user.nick_name = mobile
     user.mobile = mobile
     user.password = password
+    user.last_login = datetime.now()
     try:
         db.session.add(user)
         db.session.commit()
