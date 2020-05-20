@@ -22,9 +22,12 @@
 
 
                 {#4.新闻分类不同，需要重写#}
-                {% block categoryBlock %}
-
-                {% endblock %}
+{#                {% block categoryBlock %}#}
+{##}
+{#                {% endblock %}#}
+                {% for category in data.categories %}
+                    <li class="{% if loop.index0 == 0 %}active{% endif %}" data-cid="{{ category.id }}"><a href="javascript:;">{{ category.name }}</a></li>
+                {% endfor %}
 
 
 
@@ -97,8 +100,8 @@
 
                  <ul class="rank_list">
                     {% for news in data.click_news_list %}
-{#                        <li><span class="{{ loop.index0 | ranklist_class }}">{{ loop.index }}</span><a href="/news/{{ news.id }}">{{ news.title }}</a></li>#}
-                         <li><span>{{ loop.index }}</span><a href="#">{{ news.title }}</a></li>
+                        <li><span class="{{ loop.index0 | ranklist_class }}">{{ loop.index }}</span><a href="/news/{{ news.id }}">{{ news.title }}</a></li>
+{#                         <li><span>{{ loop.index }}</span><a href="#">{{ news.title }}</a></li>#}
                     {% endfor %}
                 </ul>
 

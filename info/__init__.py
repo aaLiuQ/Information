@@ -6,6 +6,7 @@ from flask_session import Session
 import logging
 from logging.handlers import RotatingFileHandler
 
+from info.utils.common import do_index_class
 from config import config
 
 # 配置数据库
@@ -40,6 +41,9 @@ def create_app(config_name):
     #     response.set_cookie("csrf_token", csrf_token)
     #     # 3.返回响应对象
     #     return response
+
+    # 通过app对象将函数添加到系统过滤器中
+    app.add_template_filter(do_index_class, "ranklist_class")
 
     # 设置session保存位置
     Session(app)
