@@ -115,5 +115,32 @@ def register():
     session["nick_name"] = user.nick_name
     session["mobile"] = user.mobile
 
-    # 6. 返回注册结果
     return jsonify(errno=RET.OK, errmsg="OK")
+
+
+@passport_blu.route('/login', methods=['POST'])
+def login():
+    json_data = request.json
+    mobile = json_data.get('mobile')
+    password = json_data.get('password')
+    if not all([mobile, password]):
+        return jsonify(errno=RET.NODATA, errmsg='参数不足')
+    try:
+        user = User.query.filter_by(mobile=mobile).first()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg='数据查询错误')
+    if not user:
+        return jsonify(errno=RET.NODATA, errmsg='没有该用户')
+    if not user.check_password(password):
+        return jsonify(errno=RET.PWDERR, errmsg='密码错误')
+    session['user_id'] = user.id
+    session['nick_name'] = user.nick_name
+    session['mobile'] = user.mobile
+    user.last_login = datetime.now()
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+
+    return jsonify(errno=RET.OK, errmsg='OK')
