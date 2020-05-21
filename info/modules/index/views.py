@@ -1,5 +1,5 @@
 from . import index_blu
-from flask import render_template, current_app, session, jsonify
+from flask import render_template, current_app, session, jsonify, request
 
 from info.models import User, News, Category
 from info import constants
@@ -51,3 +51,36 @@ def index():
 @index_blu.route('/favicon.ico')
 def favicon():
     return current_app.send_static_file('news/favicon.ico')
+
+
+# 新闻列表
+@index_blu.route('/news_list')
+def get_news_list():
+    args_list = request.args
+    page = args_list.get('p', '1')
+    per_page = args_list.get('per_page', constants.HOME_PAGE_MAX_NEWS)
+    category_id = args_list.get('cid', 1)
+    try:
+        page = int(page)
+        per_page = int(per_page)
+    except Exception as e:
+        current_app.logger.eror(e)
+        return jsonify(errno=RET.PARAMERR, errmsg='参数错误')
+    filtes = []
+    if category_id != "1":
+        filtes.append(News.category_id == category_id)
+    try:
+        paginate = News.query.filter(*filtes).order_by(News.create_time.desc()).paginate(page, per_page, False)
+        items = paginate.items
+        total_page = paginate.pages
+        current_page = paginate.page
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg='数据查询失败')
+
+    news_list = []
+    for news in items:
+        news_list.append(news.to_basic_dict())
+
+    return jsonify(errno=RET.OK, errmsg="OK", totalPage=total_page, currentPage=current_page, newsList=news_list,
+                   cid=category_id)
