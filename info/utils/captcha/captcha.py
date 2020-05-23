@@ -217,7 +217,6 @@ class Captcha(object):
         self.initialize()
         return self.captcha("")
 
-
 # 全局变量。使用就调用generate_captcha()即可
 captcha = Captcha.instance()
 

@@ -1,23 +1,34 @@
-from info.utils.captcha.captcha import captcha
-import redis
-from config import config
+import datetime
 import random
 
-# REDIS_HOST = "47.102.102.179"
-# REDIS_PORT = 6379
-#
-# redis_store = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT)
-# name, text, image = captcha.generate_captcha()
-# code_id = 'ss'
-# redis_store.setex('ImageCode_' + code_id, 300, text)
-#
-# print(name, text, image)
-# result = random.randint(0, 999999)
-# sms_code = '%06d' % result
-# print(sms_code)
-sms_code = '929750'
-sms = b'929750'
-if sms_code.lower() == sms.lower():
-    print('..')
-else:
-    print(".")
+from info import db
+from info.models import User
+from manage import app
+
+
+def add_test_users():
+    users = []
+    # 当前系统时间
+    now = datetime.datetime.now()
+    for num in range(0, 10000):
+        try:
+            user = User()
+            user.nick_name = "%011d" % num
+            user.mobile = "%011d" % num
+            # 密码：0123456
+            user.password_hash = "pbkdf2:sha256:50000$SgZPAbEj$a253b9220b7a916e03bf27119d401c48ff4a1c81d7e00644e0aaf6f3a8c55829"
+            # 最后一次登录时间 2018-12-27  <--> 2019-01-27 过去一个月随机活跃时间
+            #                  当前时间  -  随机秒数(2678400一个月的秒数)
+            user.last_login = now - datetime.timedelta(seconds=random.randint(0, 2678400))
+            users.append(user)
+            print(user.mobile)
+        except Exception as e:
+            print(e)
+    # 开启应用上下文
+    with app.app_context():
+        db.session.add_all(users)
+        db.session.commit()
+
+
+if __name__ == '__main__':
+    add_test_users()

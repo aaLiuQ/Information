@@ -24,60 +24,82 @@ $(function () {
             // 重置分页参数
             cur_page = 1
             total_page = 1
-            data_querying = false
             updateNewsData()
         }
     })
 
     //页面滚动加载相关
     $(window).scroll(function () {
+
         // 浏览器窗口高度
         var showHeight = $(window).height();
+
         // 整个网页的高度
         var pageHeight = $(document).height();
+
         // 页面可以滚动的距离
         var canScrollHeight = pageHeight - showHeight;
+
         // 页面滚动了多少,这个是随着页面滚动实时变化的
         var nowScroll = $(document).scrollTop();
+
         if ((canScrollHeight - nowScroll) < 100) {
-            if (!house_data_querying) {
-                // 将`是否正在向后端查询新闻数据`的标志设置为真
-                house_data_querying = true;
-                // 如果当前页面数还没到达总页数
-                if (cur_page < total_page) {
-                    // 向后端发送请求，查询下一页新闻数据
-                    updateNewsData();
-                } else {
-                    house_data_querying = false;
+            // TODO 判断页数，去更新新闻数据
+            // console.log("来了 老弟")
+            // 前端的特性会多次触发调用，我们限定请求次数
+            // data_querying=false 表示没有人向后端请求数据
+            if(!data_querying){
+                // 向后端请求数据
+
+                if(cur_page <= total_page){
+                    // 当前用户正在向后端请求数据
+                    data_querying = true
+                    updateNewsData()
+                }else{
+                    // 页面超标
+                    alert("页码超标")
+                    data_querying = false
                 }
+
             }
+
         }
     })
 })
 
 function updateNewsData() {
+    // TODO 更新新闻数据
+    
+    // 组织参数
     var params = {
-        "page": 1,
         "cid": currentCid,
-        'per_page': 50
+        "p": cur_page
     }
+    
     $.get("/news_list", params, function (resp) {
-        data_querying = false
-        if (resp) {
-            // 记录总页数
-            total_page = resp.totalPage
-            // 如果当前页数为1，则清空原有数据
-            if (cur_page == 1) {
-                $(".list_con").html('')
-            }
-            // 当前页数递增
-            cur_page += 1
-            for (var i = 0; i < resp.newsList.length; i++) {
-                var news = resp.newsList[i]
+         if (resp) {
+
+             // 将总页数赋值
+             total_page = resp.data.total_page
+             // 先清空原有数据
+             // 注意：只有第一页的时候才有测试数据，才需要清除
+             if(cur_page == 1){
+                  $(".list_con").html('')
+             }
+
+             // 页面自增 请求下一页的数据
+             cur_page += 1
+             // 在请求数据成功后，需要将data_querying该成false，下一次下拉加载更多的判断条件才能进入
+             data_querying = false
+
+            // 显示数据
+            for (var i=0;i<resp.data.news_list.length;i++) {
+                var news = resp.data.news_list[i]
                 var content = '<li>'
-                content += '<a href="#" class="news_pic fl"><img src="' + news.index_image_url + '?imageView2/1/w/170/h/170"></a>'
-                content += '<a href="#" class="news_title fl">' + news.title + '</a>'
-                content += '<a href="#" class="news_detail fl">' + news.digest + '</a>'
+                // /news/新闻id
+                content += '<a href="/news/'+ news.id +' " class="news_pic fl"><img src="' + news.index_image_url + '?imageView2/1/w/170/h/170"></a>'
+                content += '<a href="/news/' + news.id + ' " class="news_title fl">' + news.title + '</a>'
+                content += '<a href="/news/'+ news.id +' " class="news_detail fl">' + news.digest + '</a>'
                 content += '<div class="author_info fl">'
                 content += '<div class="source fl">来源：' + news.source + '</div>'
                 content += '<div class="time fl">' + news.create_time + '</div>'
@@ -87,4 +109,7 @@ function updateNewsData() {
             }
         }
     })
+    
+    
+    
 }

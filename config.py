@@ -30,7 +30,7 @@ class ProductionConfig(Config):
 
 
 # 定义配置字典
-config = {
+config_dict = {
     "development": DevelopementConfig,
     "production": ProductionConfig
 }

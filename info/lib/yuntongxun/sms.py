@@ -6,13 +6,13 @@ ssl._create_default_https_context = ssl._create_unverified_context
 #-----------------------需要将以下代码修改为自己账号里面的值-------------------------------------
 
 # 说明：主账号，登陆云通讯网站后，可在"控制台-应用"中看到开发者主账号ACCOUNT SID
-_accountSid = '8a216da86ab0b4d2016ad91ad3c41d64'
+_accountSid = '8a216da85f5c89b1015f9be6a9a41d68'
 
 # 说明：主账号Token，登陆云通讯网站后，可在控制台-应用中看到开发者主账号AUTH TOKEN
-_accountToken = 'a1898c786be64ef691741e52db4e51e9'
+_accountToken = 'a5561334640043198099b9edcdcc86d5'
 
 # 请使用管理控制台首页的APPID或自己创建应用的APPID
-_appId = '8a216da86ab0b4d2016ad91ad41f1d6b'
+_appId = '8a216da85f5c89b1015f9be6ab121d6f'
 #-----------------------------------------------------------------------------------------------
 
 

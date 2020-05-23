@@ -1,35 +1,99 @@
-from . import index_blu
-from flask import render_template, current_app, session, jsonify, request
-
+from flask import current_app, render_template, session, jsonify, request, g
+from info.modules.index import index_bp
+from info import redis_store
+# 注意：需要在别的文件中导入models中的类，让项目和models有关联
 from info.models import User, News, Category
 from info import constants
-from info.utils.response_code import RET
+
+# 2.使用蓝图对象装饰视图函数
+# 127.0.0.1:5000/ --> 项目首页
+from info.response_code import RET
 
 
-@index_blu.route('/')
-def index():
-    # 获取到当前登录用户的id
-    user_id = session.get("user_id")
-    # 通过id获取用户信息
-    user = None
-    if user_id:
-        try:
-            user = User.query.get(user_id)
-        except Exception as e:
-            current_app.logger.error(e)
+# 127.0.0.1：5000/news_list?cid=1&p=当前页码&per_page=每一页多少条数据
+from info.utils.common import get_user_info
 
-    # 获取点击排行数据
-    news_list = None
+
+# 获取新闻列表数据
+@index_bp.route("/news_list")
+def get_news_list():
+    """
+    URL：/news_list
+    cid	        string	是	分类id
+    page	    int	    否	页数，不传即获取第1页
+    per_page	int	    否	每页多少条数据，如果不传，默认10条
+    :return:
+    """
+    cid = request.args.get("cid")
+    p = request.args.get("p", 1)
+    per_page = request.args.get("per_page", 10)
+    if not cid:
+        return jsonify(errng=RET.PARAMERR, merssg="参数不足")
+    # 2.2 将参数进行int强制类型转换
     try:
+        cid = int(cid)
+        p = int(p)
+        per_page = int(per_page)
+    except Exception as e:
+        p = 1
+        per_page = 10
+        current_app.logger.error(e)
+
+    # 给参数默认值
+    news_list = []
+    current_page = 1
+    total_page = 1
+    # 当cid=1时，代表的时最新的新闻数据
+    filter_list = [News.status == 0]
+    if cid != 1:
+        # paginate:分页器（当前页数，多少条数据，出错不打印）
+        # paginate = News.query.filter().order_by(News.create_time.desc()).paginate(p, per_page, False)
+        # sqlalchemy底层重写了__eq__方法 ==返回的是查询条件
+        filter_list.append(News.category_id == cid)
+    try:
+        paginate = News.query.filter(*filter_list).order_by(News.create_time.desc()).paginate(p, per_page, False)
+        # paginate = News.query.filter(*filter_list).order_by(News.create_time.desc()).paginate(p, per_page, False)
+        # 提取当前页码所有数据：
+        news_list = paginate.items
+        current_page = paginate.page
+        total_page = paginate.pages
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询失败")
+    news_dict_list = []
+    for news in news_list if news_list else []:
+        news_dict_list.append(news.to_dict())
+    data = {
+        "news_list": news_dict_list,
+        "current_page": current_page,
+        "total_page": total_page
+    }
+
+    return jsonify(errno=RET.OK, errmsg="成功", data=data)
+
+
+# 需要去app中注册蓝图
+# 展示新闻首页
+@index_bp.route('/')
+@get_user_info
+def index():
+    user = g.user
+    # 3.将用户对象转换成字典
+    # if user:
+    #     user_dict = user.to_dict()
+    user_dict = user.to_dict() if user else None
+    # TODO 点击排行展示
+    try:
+        # 降序排序，限制六条
         news_list = News.query.order_by(News.clicks.desc()).limit(constants.CLICK_RANK_MAX_NEWS)
     except Exception as e:
         current_app.logger.error(e)
-
-    click_news_list = []
+        return jsonify(errno=RET.DBERR, errmsg="数据库查询失败")
+    newsrank_dict_list = []
     for news in news_list if news_list else []:
-        click_news_list.append(news.to_basic_dict())
+        newsrank_dict_list.append(news.to_dict())
 
-    # 新闻分类
+    # TODO 新闻分类展示
     try:
         categories = Category.query.all()
     except Exception as e:
@@ -40,47 +104,26 @@ def index():
     for category in categories if categories else []:
         categorys = category.to_dict()
         category_dict_list.append(categorys)
+
     data = {
-        "user_info": user.to_dict() if user else None,
-        "click_news_list": click_news_list,
+        "user_info": user_dict,
+        "click_news_list": newsrank_dict_list,
         "categories": category_dict_list
     }
-    return render_template('news/index.html', data=data)
+    return render_template("news/index.html", data=data)
 
 
-@index_blu.route('/favicon.ico')
-def favicon():
-    return current_app.send_static_file('news/favicon.ico')
+# 这个函数是浏览器自己调用的方法，返回的是网站的图标
+# 内部用来发送静态文件到浏览器的方法： send_static_file
+@index_bp.route('/favicon.ico')
+def get_faviconico():
+    """返回网站的图标"""
+    """
+    Function used internally to send static files from the static
+        folder to the browser
+    内部用来发送静态文件到浏览器的方法： send_static_file
+    """
+    return current_app.send_static_file("news/favicon.ico")
 
 
-# 新闻列表
-@index_blu.route('/news_list')
-def get_news_list():
-    args_list = request.args
-    page = args_list.get('p', '1')
-    per_page = args_list.get('per_page', constants.HOME_PAGE_MAX_NEWS)
-    category_id = args_list.get('cid', 1)
-    try:
-        page = int(page)
-        per_page = int(per_page)
-    except Exception as e:
-        current_app.logger.eror(e)
-        return jsonify(errno=RET.PARAMERR, errmsg='参数错误')
-    filtes = []
-    if category_id != "1":
-        filtes.append(News.category_id == category_id)
-    try:
-        paginate = News.query.filter(*filtes).order_by(News.create_time.desc()).paginate(page, per_page, False)
-        items = paginate.items
-        total_page = paginate.pages
-        current_page = paginate.page
-    except Exception as e:
-        current_app.logger.error(e)
-        return jsonify(errno=RET.DBERR, errmsg='数据查询失败')
 
-    news_list = []
-    for news in items:
-        news_list.append(news.to_basic_dict())
-
-    return jsonify(errno=RET.OK, errmsg="OK", totalPage=total_page, currentPage=current_page, newsList=news_list,
-                   cid=category_id)
